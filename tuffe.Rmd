@@ -1,0 +1,138 @@
+---
+title: "华南理工大学"
+author: 'liangkong'
+date: "`r Sys.Date()`"
+output:
+  rmdformats::readthedown:
+    highlight: kate
+---
+
+```{r setup, include=FALSE}
+## Global options
+knitr::opts_chunk$set(cache = TRUE)
+```
+
+
+```{r}
+```
+
+
+```{r,echo=FALSE}
+library(tidyverse)
+```
+
+```{r}
+nycflights13::flights->flights
+
+print(flights)
+
+flights%>%
+  head()%>%
+  knitr::kable(align = 'c')
+
+```
+
+```{r}
+
+flights%>%
+  filter(.,month==1,day==2)
+
+```
+
+
+
+# 17.2 一个简单的模型
+
+```{r,echo=FALSE}
+library(modelr)
+
+library(tidyverse)
+
+
+```
+
+
+
+```{r}
+
+ggplot(sim1,aes(x,y))+
+  geom_point()
+
+```
+
+在以上示例中，变量之间的关系应该是线性的：
+
+$$      y = a_0 + a_1 * x \tag{1}    $$
+```{r}
+
+models <- tibble(
+  a1 = runif(250,-20,40),
+  a2 = runif(250,-5,5)
+)
+
+ggplot(sim1,aes(x,y))+
+  geom_abline(
+    aes(intercept = a1, slope =a2),
+    data = models,alpha =0.25
+  )+
+  geom_point()
+
+```
+
+
+```{r}
+
+model1 <- function(a,data){
+  a[1]+data$x*a[2]
+}
+
+
+model1(c(7,1.5),sim1)
+
+
+```
+
+# 17.3 均方根误差
+
+```{r}
+
+
+measure_distance <- function(mod, data){
+  
+  diff <- data$y - model1(mod,data)
+  sqrt(mean(diff**2))
+}
+
+measure_distance(c(7,1.5),sim1)
+
+
+```
+
+
+# 17.4 利用purrr来计算模型和数据间的距离
+
+```{r,echo=FALSE}
+
+sim1_dist <- function(a1,a2){
+  
+  measure_distance(c(a1,a2),sim1)
+}
+
+models <- models%>%
+  mutate(dist = purrr::map2_dbl(a1,a2,sim1_dist))
+
+models
+
+knitr::kable(head(models),align = 'c')
+
+```
+```{r}
+
+ggplot(sim1,aes(x,y))+
+  geom_point(size=2,color='grey30')+
+  geom_abline(
+    aes(intercept=a1,slope=a2,color=-dist),
+    data = filter(models,rank(dist)<=10)
+  )
+```
+
